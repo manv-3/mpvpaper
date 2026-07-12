@@ -283,6 +283,7 @@ static void destroy_display_output(struct display_output *output) {
     wl_output_destroy(output->wl_output);
 
     free(output->name);
+    free(output->identifier); // prevent memory leak on output teardown 
     free(output);
 }
 
@@ -371,6 +372,7 @@ static void output_name(void *data, struct wl_output *wl_output, const char *nam
     (void)wl_output;
 
     struct display_output *output = data;
+    free(output->name);
     output->name = strdup(name);
 }
 
@@ -382,10 +384,12 @@ static void output_description(void *data, struct wl_output *wl_output, const ch
     const char *paren = strrchr(description, '(');
     if (paren) {
         size_t length = paren - description;
+        free(output->identifier); ///
         output->identifier = calloc(length, sizeof(char));
         strncpy(output->identifier, description, length);
         output->identifier[length - 1] = '\0';
     } else {
+        free(output->identifier); ///
         output->identifier = strdup(description);
     }
 }

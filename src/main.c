@@ -837,6 +837,8 @@ static void destroy_display_output(struct display_output *output) {
     if (!output)
         return;
     wl_list_remove(&output->link);
+    if (output->frame_callback != NULL)
+        wl_callback_destroy(output->frame_callback); // [BUGFIX] Destroy pending frame callbacks on output removal (PR #2)
     if (output->layer_surface != NULL)
         zwlr_layer_surface_v1_destroy(output->layer_surface);
     if (output->surface != NULL)
@@ -987,6 +989,7 @@ static void output_name(void *data, struct wl_output *wl_output, const char *nam
     (void)wl_output;
 
     struct display_output *output = data;
+    free(output->name); // [BUGFIX] Prevent memory leak on repeated output updates (PR #2)
     output->name = strdup(name);
 }
 
@@ -1001,6 +1004,7 @@ static void output_description(void *data, struct wl_output *wl_output, const ch
     const char *paren = strrchr(description, '(');
     if (paren) {
         size_t length = paren - description;
+        free(output->identifier); // [BUGFIX] Prevent memory leak on repeated output updates (PR #2)
         output->identifier = calloc(length, sizeof(char));
         if (!output->identifier) {
             cflp_warning("Failed to allocate output identifier");
@@ -1009,6 +1013,7 @@ static void output_description(void *data, struct wl_output *wl_output, const ch
         strncpy(output->identifier, description, length);
         output->identifier[length - 1] = '\0';
     } else {
+        free(output->identifier); // [BUGFIX] Prevent memory leak on repeated output updates (PR #2)
         output->identifier = strdup(description);
     }
 }
